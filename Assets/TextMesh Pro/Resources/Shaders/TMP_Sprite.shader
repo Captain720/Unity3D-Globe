@@ -53,6 +53,7 @@ Shader "TextMeshPro/Sprite"
 			#include "UnityCG.cginc"
 			#include "UnityUI.cginc"
 
+			#pragma multi_compile __ UNITY_UI_CLIP_RECT
 			#pragma multi_compile __ UNITY_UI_ALPHACLIP
 			
 			struct appdata_t
@@ -74,15 +75,11 @@ Shader "TextMeshPro/Sprite"
 			fixed4 _TextureSampleAdd;
 			float4 _ClipRect;
 
-#if UNITY_VERSION < 530
-			bool _UseClipRect;
-#endif
-
 			v2f vert(appdata_t IN)
 			{
 				v2f OUT;
 				OUT.worldPosition = IN.vertex;
-				OUT.vertex = mul(UNITY_MATRIX_MVP, OUT.worldPosition);
+				OUT.vertex = UnityObjectToClipPos(OUT.worldPosition);
 
 				OUT.texcoord = IN.texcoord;
 				
@@ -100,15 +97,12 @@ Shader "TextMeshPro/Sprite"
 			{
 				half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd) * IN.color;
 				
-			#if UNITY_VERSION < 530
-				if (_UseClipRect)
+				#if UNITY_UI_CLIP_RECT
 					color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
-			#else
-				color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
-			#endif
-				
+				#endif
+
 				#ifdef UNITY_UI_ALPHACLIP
-				clip (color.a - 0.001);
+					clip (color.a - 0.001);
 				#endif
 
 				return color;
